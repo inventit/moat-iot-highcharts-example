@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+	  MOAT IoT HighchartsJS Example Application
+     ====================================================================== -->
+<project name="project" default="default">
+
+	<property name="appengine.version" value="1.7.6" />
+
+	<script language="javascript">
+		function log(m) {
+	    	java.lang.System.out.println(m);
+		}
+		var antHome = project.getProperty("ant.home");
+		var sdkVersion = project.getProperty("appengine.version");
+		var sdkBundleHome = antHome.substring(0, antHome.indexOf("plugins")) +
+			"plugins/com.google.appengine.eclipse.sdkbundle_" + sdkVersion;
+		log("app engine plugin path => " + sdkBundleHome);
+		project.setProperty("sdkBundleHome", sdkBundleHome);
+	</script>
+
+	<!-- ================================= 
+          target: default              
+         ================================= -->
+	<target name="default" depends="download">
+		<copy todir="war/WEB-INF/lib" flatten="true" verbose="true">
+			<fileset dir="${sdkBundleHome}">
+				<include name="*/lib/opt/**/appengine-api-labs.jar" />
+				<include name="*/lib/opt/**/appengine-endpoints.jar" />
+				<include name="*/lib/opt/**/jsr107cache-1.1.jar" />
+				<include name="*/lib/opt/**/jdo-api-3.0.1.jar" />
+				<include name="*/lib/opt/**/jta-1.1.jar" />
+				<include name="*/lib/opt/**/asm-4.0.jar" />
+				<include name="*/lib/opt/**/geronimo-jpa_2.0_spec-1.0.jar" />
+				<include name="*/lib/opt/tools/datanucleus/v2/**/datanucleus-api-jdo-*.jar" />
+				<include name="*/lib/opt/tools/datanucleus/v2/**/datanucleus-api-jpa-*.jar" />
+				<include name="*/lib/opt/user/datanucleus/v2/**/datanucleus-appengine-*.jar" />
+				<include name="*/lib/opt/tools/datanucleus/v2/**/datanucleus-core-*.jar" />
+				<include name="*/lib/opt/**/appengine-jsr107cache-*.jar" />
+				<include name="*/lib/user/**/appengine-api-1.0-sdk-*.jar" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: download                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="download">
+	</target>
+
+</project>
