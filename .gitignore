@@ -1,0 +1,12 @@
+signed.bin*
+*.zip
+hcjs-example-android/bin
+hcjs-example-android/target
+hcjs-example-android/gen
+hcjs-example-android-arduino/bin
+hcjs-example-android-arduino/libs/com/hoho/usb-serial-for-android/v010/*.jar
+hcjs-example-android-arduino/gen
+hcjs-example-android-arduino/target
+hcjs-example-gae/war/WEB-INF/lib
+hcjs-example-gae/war/WEB-INF/classes
+hcjs-example-gae/war/WEB-INF/appengine-generated
