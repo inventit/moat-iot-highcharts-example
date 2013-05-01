@@ -69,8 +69,11 @@ public class AuthenticationFilter implements Filter {
 			LOGGER.info("[AUTH_SKIPPED] DEVELOPMENT MODE....");
 
 		} else {
+			final String requestUri = request.getRequestURI();
 			final String pathInfo = request.getPathInfo();
-			if (pathInfo != null && !pathInfo.startsWith(LOGIN_PATH)) {
+			if (requestUri != null && requestUri.startsWith("/sensing_data")) {
+				LOGGER.info("[DATA_ARRIVED]");
+			} else if (pathInfo == null || !pathInfo.startsWith(LOGIN_PATH)) {
 				final UserService userService = UserServiceFactory
 						.getUserService();
 				final User user = userService.getCurrentUser();
