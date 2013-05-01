@@ -70,7 +70,7 @@ public class AuthenticationFilter implements Filter {
 
 		} else {
 			final String pathInfo = request.getPathInfo();
-			if (!pathInfo.startsWith(LOGIN_PATH)) {
+			if (pathInfo != null && !pathInfo.startsWith(LOGIN_PATH)) {
 				final UserService userService = UserServiceFactory
 						.getUserService();
 				final User user = userService.getCurrentUser();
