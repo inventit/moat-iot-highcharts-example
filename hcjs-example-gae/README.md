@@ -11,7 +11,7 @@ In the Production mode, this application restricts access from the internet. You
 
 ## How to setup
 
-After `git clone` or download and unarchive the zip file from the [moat-iot-get-started](https://github.com/inventit/moat-iot-get-started) project, do the following.
+After `git clone` or download and unarchive the zip file from the [moat-iot-highcharts-example](https://github.com/inventit/moat-iot-highcharts-example) project, do the following.
 
   1. Install [Eclipse Juno (4.2)](http://www.eclipse.org/downloads/)
   1. Install [Google App Engine Plugin (1.7.6)](https://developers.google.com/appengine/docs/java/tools/eclipse)
