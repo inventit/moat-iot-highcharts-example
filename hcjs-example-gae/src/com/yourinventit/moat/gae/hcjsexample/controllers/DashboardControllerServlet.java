@@ -55,12 +55,11 @@ public class DashboardControllerServlet extends HttpServlet {
 		final List<SysDevice> devices = SysDevice.find(0, -1);
 		req.setAttribute("devices", devices);
 		final Map<String, List<SensingData>> sensingDataList = new HashMap<String, List<SensingData>>();
-		final String timestamp = req.getParameter("timestamp");
-		final long timestampLong = StringUtils.isEmpty(timestamp) ? System
-				.currentTimeMillis() : Long.valueOf(timestamp);
+		final String n = req.getParameter("n");
+		final int nInt = StringUtils.isEmpty(n) ? -1 : Integer.valueOf(n);
 		for (SysDevice device : devices) {
 			sensingDataList.put(device.getName(),
-					SensingData.find(device.getName(), timestampLong));
+					SensingData.find(device.getName(), nInt));
 		}
 		req.setAttribute("sensing_data_list", sensingDataList);
 		req.setAttribute("job_list", SysDmjob.find(0, -1));

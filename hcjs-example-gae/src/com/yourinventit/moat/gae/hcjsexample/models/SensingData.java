@@ -8,6 +8,7 @@ package com.yourinventit.moat.gae.hcjsexample.models;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
@@ -17,6 +18,7 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 import com.google.appengine.labs.repackaged.org.json.JSONArray;
+import com.google.appengine.labs.repackaged.org.json.JSONException;
 import com.google.appengine.labs.repackaged.org.json.JSONObject;
 
 /**
@@ -26,6 +28,23 @@ import com.google.appengine.labs.repackaged.org.json.JSONObject;
  */
 @PersistenceCapable
 public class SensingData extends MoatModel {
+
+	private static final Logger LOGGER = Logger.getLogger(SensingData.class
+			.getName());
+
+	private static final boolean DATA_STORE_ENABLED = false;
+
+	/**
+	 * 10 minutes
+	 */
+	private static final long CHECKING_INTERVAL_MS = 60 * 10 * 1000;
+
+	/**
+	 * Last removed timestamp
+	 */
+	private static long lastRemoved = 0;
+
+	private static final List<SensingData> MEMORY_STORE = new ArrayList<SensingData>();
 
 	@PrimaryKey
 	@Persistent(valueStrategy = IdGeneratorStrategy.UUIDSTRING)
@@ -38,7 +57,7 @@ public class SensingData extends MoatModel {
 	private String da;
 
 	@Persistent
-	private float value;
+	private float value = 0.0f;
 
 	@Persistent
 	private String unit;
@@ -143,7 +162,40 @@ public class SensingData extends MoatModel {
 	 */
 	@Override
 	public String asJson() {
-		throw new UnsupportedOperationException();
+		return toJSONObject().toString();
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	protected JSONObject toJSONObject() {
+		final JSONObject jsonObject = new JSONObject();
+		try {
+			jsonObject.put("uid", getUid());
+			jsonObject.put("timestamp", getTimestamp());
+			jsonObject.put("da", getDa());
+			jsonObject.put("unit", getUnit());
+			if (!Float.isInfinite(getValue())) {
+				jsonObject.put("value", getValue());
+			}
+			return jsonObject;
+		} catch (JSONException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	/**
+	 * 
+	 * @param list
+	 * @return
+	 */
+	public static String asJson(List<SensingData> list) {
+		final JSONArray array = new JSONArray();
+		for (SensingData data : list) {
+			array.put(data.toJSONObject());
+		}
+		return array.toString();
 	}
 
 	/**
@@ -158,25 +210,6 @@ public class SensingData extends MoatModel {
 		setDa(jsonObject.optString("da"));
 		setUnit(jsonObject.optString("unit"));
 		setValue((float) jsonObject.optDouble("value"));
-	}
-
-	/**
-	 * 
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static List<SensingData> find(String deviceName, long timestamp) {
-		final PersistenceManager persistenceManager = PMF.get()
-				.getPersistenceManager();
-		try {
-			final Query query = persistenceManager.newQuery(SensingData.class);
-			query.setOrdering("timestamp descending");
-			query.setFilter("deviceName == deviceNameParam && timestamp >= timestampParam");
-			query.declareParameters("String deviceNameParam, Long timestampParam");
-			return (List<SensingData>) query.execute(deviceName, timestamp);
-		} finally {
-			persistenceManager.close();
-		}
 	}
 
 	/**
@@ -196,27 +229,140 @@ public class SensingData extends MoatModel {
 
 	/**
 	 * 
-	 * @param inputStream
-	 * @return
 	 */
-	public static List<SensingData> save(InputStream inputStream) {
+	public static long deleteOlderThan(long time) {
 		final PersistenceManager persistenceManager = PMF.get()
 				.getPersistenceManager();
-		final JSONObject jsonObject = fromInputStream(inputStream);
-		final JSONObject notifyAsync = jsonObject.optJSONObject("notifyAsync");
-		final JSONArray dataArray = notifyAsync.optJSONArray("data");
 		try {
-			final List<SensingData> result = new ArrayList<SensingData>(
-					dataArray.length());
-			for (int i = 0; i < dataArray.length(); i++) {
-				final SensingData sensingData = new SensingData();
-				sensingData.updateFrom(dataArray.optJSONObject(i));
-				result.add(persistenceManager.makePersistent(sensingData));
-			}
-			return result;
+			final Query query = persistenceManager.newQuery(SensingData.class);
+			query.setFilter("timestamp < timestampParam");
+			query.declareParameters("Long timestampParam");
+			return query.deletePersistentAll(time);
 		} finally {
 			persistenceManager.close();
 		}
 	}
 
+	static JSONArray extractDataJSONArray(JSONObject jsonObject) {
+		final JSONObject arguments = jsonObject.optJSONObject("arguments");
+		final JSONObject notifyAsync = arguments.optJSONObject("notifyAsync");
+		final JSONArray dataResultArray = notifyAsync.optJSONArray("data");
+		final JSONObject dataResult = dataResultArray.optJSONObject(0);
+		return dataResult.optJSONArray("array");
+	}
+
+	/**
+	 * 
+	 * @param inputStream
+	 * @return
+	 */
+	public static List<SensingData> save(InputStream inputStream) {
+		if (DATA_STORE_ENABLED) {
+			final PersistenceManager persistenceManager = PMF.get()
+					.getPersistenceManager();
+			final JSONObject jsonObject = fromInputStream(inputStream);
+			try {
+				final JSONArray dataArray = extractDataJSONArray(jsonObject);
+				final List<SensingData> result = new ArrayList<SensingData>(
+						dataArray.length());
+				for (int i = 0; i < dataArray.length(); i++) {
+					final SensingData sensingData = new SensingData();
+					sensingData.updateFrom(dataArray.optJSONObject(i));
+					result.add(sensingData);
+				}
+				persistenceManager.makePersistentAll(result);
+				final long now = System.currentTimeMillis();
+				if (now - lastRemoved > CHECKING_INTERVAL_MS) {
+					deleteOlderThan(now - CHECKING_INTERVAL_MS);
+					lastRemoved = now;
+				}
+				return result;
+			} catch (RuntimeException e) {
+				LOGGER.severe("[ERROR:save] => " + jsonObject);
+				throw e;
+			} finally {
+				persistenceManager.close();
+			}
+		} else {
+			return saveOnMemory(inputStream);
+		}
+
+	}
+
+	/**
+	 * 
+	 * @param inputStream
+	 * @return
+	 */
+	public static List<SensingData> saveOnMemory(InputStream inputStream) {
+		final JSONObject jsonObject = fromInputStream(inputStream);
+		try {
+			final JSONArray dataArray = extractDataJSONArray(jsonObject);
+			final List<SensingData> result = new ArrayList<SensingData>(
+					dataArray.length());
+			for (int i = 0; i < dataArray.length(); i++) {
+				final SensingData sensingData = new SensingData();
+				sensingData.updateFrom(dataArray.optJSONObject(i));
+				result.add(sensingData);
+			}
+			synchronized (MEMORY_STORE) {
+				final long maxDiff = MEMORY_STORE.size() - CHECKING_INTERVAL_MS
+						/ 1000;
+				if (maxDiff > 0) {
+					for (int i = 0; i < maxDiff; i++) {
+						MEMORY_STORE.remove(0);
+					}
+				}
+				MEMORY_STORE.addAll(result);
+			}
+			return result;
+		} catch (RuntimeException e) {
+			LOGGER.severe("[ERROR:save] => " + jsonObject);
+			throw e;
+		}
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<SensingData> find(String deviceName, int n) {
+		if (DATA_STORE_ENABLED) {
+			final PersistenceManager persistenceManager = PMF.get()
+					.getPersistenceManager();
+			try {
+				final Query query = persistenceManager
+						.newQuery(SensingData.class);
+				query.setOrdering("timestamp descending");
+				query.setFilter("deviceName == deviceNameParam");
+				query.declareParameters("String deviceNameParam");
+				final List<SensingData> result = (List<SensingData>) query
+						.execute(deviceName);
+				if (n < 1 || n >= result.size()) {
+					return result;
+				}
+				return result.subList(0, n);
+			} finally {
+				persistenceManager.close();
+			}
+		} else {
+			// ignore deviceName
+			return findOnMemory(n);
+		}
+	}
+
+	/**
+	 * 
+	 * @param n
+	 * @return
+	 */
+	public static List<SensingData> findOnMemory(int n) {
+		synchronized (MEMORY_STORE) {
+			if (n < 1 || n >= MEMORY_STORE.size()) {
+				return new ArrayList<SensingData>(MEMORY_STORE);
+			}
+			return MEMORY_STORE.subList(0, n);
+		}
+	}
 }
