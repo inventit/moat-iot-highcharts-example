@@ -4,7 +4,8 @@
      ====================================================================== -->
 <project name="project" default="default">
 
-	<property name="appengine.version" value="1.7.6" />
+	<!-- Change the value to your GAE SDK plugin version -->
+	<property name="appengine.version" value="1.7.7.1" />
 
 	<script language="javascript">
 		function log(m) {
