@@ -71,7 +71,8 @@ public class AuthenticationFilter implements Filter {
 		} else {
 			final String requestUri = request.getRequestURI();
 			final String pathInfo = request.getPathInfo();
-			if (requestUri != null && requestUri.startsWith("/sensing_data")) {
+			if (requestUri != null
+					&& requestUri.startsWith("/sensing_data/create")) {
 				LOGGER.info("[DATA_ARRIVED]");
 			} else if (pathInfo == null || !pathInfo.startsWith(LOGIN_PATH)) {
 				final UserService userService = UserServiceFactory

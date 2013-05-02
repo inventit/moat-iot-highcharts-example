@@ -342,7 +342,7 @@ public class SensingData extends MoatModel {
 				if (n < 1 || n >= result.size()) {
 					return result;
 				}
-				return result.subList(0, n);
+				return result.subList(result.size() - n, result.size());
 			} finally {
 				persistenceManager.close();
 			}
@@ -362,7 +362,8 @@ public class SensingData extends MoatModel {
 			if (n < 1 || n >= MEMORY_STORE.size()) {
 				return new ArrayList<SensingData>(MEMORY_STORE);
 			}
-			return MEMORY_STORE.subList(0, n);
+			return MEMORY_STORE.subList(MEMORY_STORE.size() - n,
+					MEMORY_STORE.size());
 		}
 	}
 }
