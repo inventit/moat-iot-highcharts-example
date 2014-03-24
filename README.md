@@ -14,6 +14,11 @@ This should include a C application but is not inlcuded yet because the building
 
 ## Change History
 
+1.0.2 : March 24, 2014
+
+* Reflects the API changes
+* Modifies e-mails and web app URI
+
 1.0.1 : June 7, 2013
 
 * Append C code

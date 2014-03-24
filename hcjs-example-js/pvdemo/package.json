@@ -4,22 +4,18 @@
 	"description": "PV panel Monitoring Management",
 	"maintainers": [
 		{
-			"name": "Tokyo Engineering Team",
-			"email": "asparagus@yourinventit.com"
-		},
-		{
-			"name": "Beijing Engineering Team",
-			"email": "bejing-all@yourinventit.com"
+			"name": "Example Maintainers",
+			"email": "maintainers@example.com"
 		}
 	],
 	"bugs": {
-		"mail": "iidn-sys-notice@yourinventit.com"
+		"mail": "bugs@example.com"
 	},
-	"notification" : { "http" : "http://sunsync-demo.appspot.com/sensing_data/create" },
+	"notification" : { "http" : "http://localhost:8888/sensing_data/create" },
 	"models" : {
 		"SensingData" : {
 			"array" : true,
-			"shared" : false,
+			"scope" : "device",
 			"attributes" : {
 				"timestamp" : {"type" : "int64"},
 				"da" : {"type" : "string"},
